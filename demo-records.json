@@ -1,0 +1,96 @@
+{
+  "tasks": [
+    {
+      "id": "t0",
+      "title": "Vídeo institucional — edição",
+      "client": "Karasu Escola de Lutas"
+    },
+    {
+      "id": "t1",
+      "title": "Arte de matrículas — ensino médio",
+      "client": "Educator Invictus"
+    },
+    {
+      "id": "t2",
+      "title": "Reels — entregas da JC",
+      "client": "JC Plásticos"
+    },
+    {
+      "id": "t3",
+      "title": "Carrossel procedimentos",
+      "client": "Louise Beauté"
+    },
+    {
+      "id": "t4",
+      "title": "Revisar roteiro institucional",
+      "client": "Escola DP2"
+    },
+    {
+      "id": "t5",
+      "title": "Vídeo de iluminação — edição",
+      "client": "4LAMP"
+    },
+    {
+      "id": "t6",
+      "title": "Aprovar vídeo do estúdio",
+      "client": "98 Records"
+    },
+    {
+      "id": "t7",
+      "title": "Arte de simulado",
+      "client": "Curso Mérito"
+    },
+    {
+      "id": "t8",
+      "title": "Roteiro de captação",
+      "client": "Karasu Escola de Lutas"
+    },
+    {
+      "id": "t9",
+      "title": "Vídeo campanha de matrículas",
+      "client": "Educator Invictus"
+    },
+    {
+      "id": "t10",
+      "title": "Posts semanais",
+      "client": "JC Plásticos"
+    },
+    {
+      "id": "t11",
+      "title": "Revisão de corte",
+      "client": "Louise Beauté"
+    }
+  ],
+  "events": [
+    {
+      "id": "e0",
+      "title": "Captação — Karasu Escola de Lutas",
+      "client": "Karasu Escola de Lutas"
+    },
+    {
+      "id": "e1",
+      "title": "Captação — JC Plásticos",
+      "client": "JC Plásticos"
+    },
+    {
+      "id": "e2",
+      "title": "Reunião de planejamento — Educator",
+      "client": "Educator Invictus"
+    },
+    {
+      "id": "e3",
+      "title": "Entrega de materiais — Louise",
+      "client": "Louise Beauté"
+    },
+    {
+      "id": "e4",
+      "title": "Captação — 4LAMP",
+      "client": "4LAMP"
+    },
+    {
+      "id": "e5",
+      "title": "Reunião interna de produção",
+      "client": "Midas"
+    }
+  ]
+}

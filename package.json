@@ -1,0 +1,14 @@
+{
+  "name": "midas-os",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Midas OS — MVP funcional para testes locais",
+  "scripts": {
+    "start": "node start.js",
+    "dev": "node start.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,163 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Midas OS",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://SEU-DOMINIO.com"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "paths": {
+    "/api/agent/context": {
+      "get": {
+        "operationId": "getMidasContext",
+        "description": "Consultar data atual, equipe cadastrada, tarefas e eventos.",
+        "responses": {
+          "200": {
+            "description": "Operação concluída",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agent/records": {
+      "post": {
+        "operationId": "createMidasRecord",
+        "description": "Criar tarefa, captação, reunião ou entrega. Para tarefa: owner e due obrigatórios. Para eventos: date e time obrigatórios. Reutilize requestId em tentativas do mesmo cadastro.",
+        "responses": {
+          "201": {
+            "description": "Operação concluída",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "requestId",
+                  "kind",
+                  "title",
+                  "client"
+                ],
+                "properties": {
+                  "requestId": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "client": {
+                    "type": "string"
+                  },
+                  "owner": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "due": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "time": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "task",
+                      "capture",
+                      "meet",
+                      "deliver"
+                    ]
+                  },
+                  "priority": {
+                    "type": "string",
+                    "enum": [
+                      "Normal",
+                      "Média",
+                      "Alta"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-openai-isConsequential": true
+      }
+    },
+    "/api/agent/publish": {
+      "post": {
+        "operationId": "publishMidasEvent",
+        "description": "Publicar um evento local no Google Agenda da conta vinculada. Duração padrão de 1 hora. Repetições não duplicam; alterações locais posteriores não atualizam o Google.",
+        "responses": {
+          "200": {
+            "description": "Operação concluída",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "eventId"
+                ],
+                "properties": {
+                  "eventId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-openai-isConsequential": true
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+.git
+.env
+.env.*
+data
+node_modules
+test
+artifacts
+*.sqlite*
+.DS_Store

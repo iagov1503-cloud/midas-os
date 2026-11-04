@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.DS_Store
+
+data/
+artifacts/
+*.sqlite
+*.sqlite-*
+*.db
+*.sqlite-wal
+*.sqlite-shm
