@@ -14,7 +14,7 @@ test('Configuração de produção exige HTTPS, banco persistente e convite',()=
  assert.throws(()=>publicOrigin({PUBLIC_URL:'https://midas.example/path'}));
 });
 
-test('Publicação restringe cadastro, usa cookies seguros e entrega esquema com domínio real',async()=>{
+test('Publicação restringe cadastro, usa cookies seguros e mantém integrações removidas indisponíveis',async()=>{
  const dir=fs.mkdtempSync(path.join(require('node:os').tmpdir(),'midas-production-'));
  const original={PUBLIC_URL:process.env.PUBLIC_URL,DB_PATH:process.env.DB_PATH,REGISTRATION_CODE:process.env.REGISTRATION_CODE};
  process.env.DB_PATH=path.join(dir,'test.sqlite');
@@ -30,9 +30,10 @@ test('Publicação restringe cadastro, usa cookies seguros e entrega esquema com
  });
  try{
   assert.equal((await call('/healthz')).status,200);
-  assert.equal((await call('/chatgpt-openapi.json')).data.servers[0].url,'https://midas.example');
-  assert.equal((await call('/api/integrations/chatgpt')).status,401);
-  assert.equal((await call('/api/integrations/chatgpt/instructions')).status,401);
+  assert.equal((await call('/chatgpt-openapi.json')).status,404);
+  assert.equal((await call('/api/integrations/chatgpt')).status,404);
+  assert.equal((await call('/api/integrations/chatgpt/instructions')).status,404);
+  for(const route of ['/api/google/status','/api/google/callback','/api/agent/context'])assert.equal((await call(route)).status,404);
   const account={name:'Iago',role:'Gestor',phone:'85912345678',password:'test-password'};
   assert.equal((await call('/api/auth/register','POST',account)).status,400);
   assert.equal((await call('/api/auth/register','POST',{...account,registrationCode:process.env.REGISTRATION_CODE},{origin:'https://midas.example'})).status,201);

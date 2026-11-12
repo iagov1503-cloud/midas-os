@@ -9,13 +9,21 @@ test('Banco persiste registros, valida entrada e rejeita conflitos', async () =>
  const run=(action,payload)=>JSON.parse(execFileSync(process.execPath,['-e',`const d=require('./database');try{console.log(JSON.stringify({status:200,data:d.${action}(${payload?JSON.stringify(payload):''})}))}catch(e){console.log(JSON.stringify({status:e.status||400,error:e.message}))}`],{cwd:path.join(__dirname,'..'),env:{...process.env,DB_PATH:path.join(dir,'test.sqlite')},encoding:'utf8'}));
  const request=async(method,payload)=>{const result=run(method==='GET'?'read':'write',payload);return {...result,json:async()=>result.data};};
  try{
-  assert.deepEqual((await (await request('GET')).json()),{initialized:true,revision:0,tasks:[],events:[]});
+  assert.deepEqual((await (await request('GET')).json()),{initialized:true,revision:0,tasks:[],events:[],clientPlans:[]});
   const payload={revision:0,tasks:[{id:'t1',title:'Teste',client:'Cliente',owner:'Iago',type:'Arte',status:'A fazer',due:'2026-10-30',priority:'Alta',created:'2026-10-30',completed:null}],events:[{id:'e1',title:'Reunião',client:'Midas',date:'2026-10-30',time:'09:00',type:'meet'}]};
   assert.equal((await request('PUT',payload)).status,200);
   assert.equal((await request('PUT',payload)).status,409);
   assert.equal((await request('PUT',{...payload,revision:1,tasks:[{...payload.tasks[0],due:'inválida'}]})).status,400);
   const saved=await (await request('GET')).json();assert.deepEqual(saved.tasks,payload.tasks);assert.deepEqual(saved.events,payload.events);assert.equal(saved.revision,1);
-  assert.equal((await request('PUT',{revision:1,tasks:[],events:[]})).status,200);
+  const plan={id:'p1',client:'Cliente',month:'2026-11',videos:8,arts:4,traffic:true,services:'Relatório mensal'};
+  assert.equal((await request('PUT',{revision:1,tasks:payload.tasks,events:payload.events,clientPlans:[plan]})).status,200);
+  assert.deepEqual((await (await request('GET')).json()).clientPlans,[plan]);
+  assert.equal((await request('PUT',{revision:2,tasks:[],events:[],clientPlans:[plan,{...plan,id:'p2'}]})).status,400);
+  assert.equal((await request('PUT',{revision:2,tasks:[],events:[],clientPlans:[{...plan,videos:-1}]})).status,400);
+  assert.equal((await request('PUT',{revision:2,tasks:[],events:[]})).status,200);
+  assert.deepEqual((await (await request('GET')).json()).clientPlans,[plan]);
+  assert.equal((await request('PUT',{revision:3,tasks:[],events:[],clientPlans:[{...plan,videos:10}]})).status,200);
+  assert.equal((await (await request('GET')).json()).clientPlans[0].videos,10);
   assert.deepEqual((await (await request('GET')).json()).tasks,[]);
  }finally{rmSync(dir,{recursive:true,force:true});}
 });

@@ -7,8 +7,6 @@ const config = require('./config');
 if (require.main === module) config.validateProduction();
 const database = require('./database');
 const auth = require('./auth');
-const google = require('./google-calendar');
-const chatgpt = require('./chatgpt');
 const attempts=new Map();
 const root = path.join(__dirname, 'public');
 const port = Number(process.env.PORT) || 3000;
@@ -24,63 +22,12 @@ const server = http.createServer(async (req,res)=>{
   const user=auth.getUser(token);
   if (!['GET','HEAD'].includes(req.method) && req.headers.origin && req.headers.origin !== (origin || `http://${req.headers.host}`)) return json(403,{error:'Origem não permitida.'});
   if(route==='/healthz' && req.method==='GET')return json(200,{ok:true});
-  if(route==='/chatgpt-openapi.json' && req.method==='GET'){
-    const schema=JSON.parse(fs.readFileSync(path.join(root,'chatgpt-openapi.json'),'utf8'));
-    if(origin)schema.servers=[{url:origin}];
-    return json(200,schema);
-  }
-  if(route==='/api/integrations/chatgpt/instructions' && req.method==='GET'){
-    if(!user)return json(401,{error:'Faça login para continuar.'});
-    return json(200,{instructions:fs.readFileSync(path.join(__dirname,'docs','chatgpt-instructions.md'),'utf8'),publicUrl:origin,google:google.status(user.id)});
-  }
+  if(route==='/chatgpt-openapi.json'||route.startsWith('/api/integrations/chatgpt')||route.startsWith('/api/agent/')||route.startsWith('/api/google/'))return json(404,{error:'Integração removida. O Midas agora é um gestor de tarefas.'});
   const body=async()=>{
     if(!req.headers['content-type']?.startsWith('application/json'))throw new Error('Envie JSON.');
     let text='';for await(const chunk of req){text+=chunk;if(Buffer.byteLength(text)>16384)throw new Error('Solicitação muito grande.');}
     const value=JSON.parse(text);if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Dados inválidos.');return value;
   };
-  if(route==='/api/integrations/chatgpt'){
-    if(!user)return json(401,{error:'Faça login para continuar.'});
-    if(req.method==='GET')return json(200,chatgpt.status(user.id));
-    if(req.method==='POST')return json(201,chatgpt.rotate(user.id));
-    if(req.method==='DELETE'){chatgpt.revoke(user.id);return json(200,{ok:true});}
-  }
-  if(route.startsWith('/api/agent/')){
-    const agentId=chatgpt.authenticate(req.headers.authorization);
-    if(!agentId)return json(401,{error:'Chave do agente inválida ou revogada.'});
-    try{
-      if(route==='/api/agent/context'&&req.method==='GET')return json(200,chatgpt.context());
-      if(route==='/api/agent/records'&&req.method==='POST')return json(201,chatgpt.create(agentId,await body()));
-      if(route==='/api/agent/publish'&&req.method==='POST')return json(200,await google.publish(agentId,(await body()).eventId));
-      return json(404,{error:'Rota não encontrada.'});
-    }catch(error){return json(400,{error:error.message});}
-  }
-  if(route==='/api/google/callback'  && req.method==='GET'){
-    const binding=req.headers.cookie?.split(';').map(v=>v.trim()).find(v=>v.startsWith('midas_google_oauth='))?.slice(19);
-    res.setHeader('Set-Cookie','midas_google_oauth=; HttpOnly; SameSite=Lax; Path=/api/google/callback; Max-Age=0'+secureCookie);
-    let result='connected';
-    try{await google.callback(new URL(req.url,'http://localhost').searchParams,binding);}catch{result='error';}
-    res.writeHead(302,{Location:'/?google='+result,'Cache-Control':'no-store','Referrer-Policy':'no-referrer'});return res.end();
-  }
-  if(route.startsWith('/api/google/')){
-    if(!user)return json(401,{error:'Faça login para continuar.'});
-    try{
-      if(route==='/api/google/status'&&req.method==='GET')return json(200,google.status(user.id));
-      if(route==='/api/google/connect'&&req.method==='POST'){
-        const result=google.start(user.id);
-        res.setHeader('Set-Cookie',`midas_google_oauth=${result.binding}; HttpOnly; SameSite=Lax; Path=/api/google/callback; Max-Age=600${secureCookie}`);
-        return json(200,{url:result.url});
-      }
-      if(route==='/api/google/publish'&&req.method==='POST')return json(200,await google.publish(user.id,(await body()).eventId));
-      if(route==='/api/google/calendars'&&req.method==='GET')return json(200,{calendars:await google.calendars(user.id)});
-      if(route==='/api/google/calendar'&&req.method==='PUT'){await google.select(user.id,(await body()).calendarId);return json(200,{ok:true});}
-      if(route==='/api/google/events'&&req.method==='GET'){
-        const params=new URL(req.url,'http://localhost').searchParams;
-        return json(200,{events:await google.events(user.id,params.get('from'),params.get('to'))});
-      }
-      if(route==='/api/google/disconnect'&&req.method==='POST'){google.disconnect(user.id);return json(200,{ok:true});}
-      return json(405,{error:'Método não permitido.'});
-    }catch(error){return json(400,{error:error.message});}
-  }
   if(route.startsWith('/api/auth/')){
     if(route==='/api/auth/me'&&req.method==='GET')return json(user?200:401,user?{user}:{error:'Faça login para continuar.'});
     if(req.method!=='POST')return json(405,{error:'Método não permitido.'});

@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS events (
  id TEXT PRIMARY KEY, title TEXT NOT NULL, client TEXT NOT NULL, date TEXT NOT NULL,
  time TEXT NOT NULL, type TEXT NOT NULL, position INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS client_plans (
+ id TEXT PRIMARY KEY, client TEXT NOT NULL, month TEXT NOT NULL,
+ videos INTEGER NOT NULL, arts INTEGER NOT NULL, traffic INTEGER NOT NULL, services TEXT NOT NULL,
+ UNIQUE(client, month));
 CREATE INDEX IF NOT EXISTS tasks_due ON tasks(due);
 CREATE INDEX IF NOT EXISTS events_date ON events(date);`);
 // Remove only the original demo identities, once; retain user-created records.
@@ -36,10 +40,18 @@ if (!db.prepare('SELECT name FROM migrations WHERE name=?').get('remove-demo-v1'
 function read() {
  const meta = db.prepare('SELECT revision FROM metadata WHERE id=1').get();
  const rows = table => db.prepare(`SELECT * FROM ${table} ORDER BY position`).all().map(({position, ...row}) => row);
- return { initialized: !!meta, revision: meta?.revision || 0, tasks: rows('tasks'), events: rows('events') };
+ return { initialized: !!meta, revision: meta?.revision || 0, tasks: rows('tasks'), events: rows('events'), clientPlans: db.prepare('SELECT * FROM client_plans ORDER BY client, month').all().map(p=>({...p,traffic:!!p.traffic})) };
 }
 function validate(data) {
  if (!data || !Number.isSafeInteger(data.revision) || !Array.isArray(data.tasks) || !Array.isArray(data.events)) throw new Error('Dados inválidos.');
+ if (data.clientPlans !== undefined) {
+  if (!Array.isArray(data.clientPlans)) throw new Error('Pacotes inválidos.');
+  const ids=new Set(), keys=new Set();
+  for(const p of data.clientPlans){
+   if(!p || ['id','client','month','services'].some(k=>typeof p[k]!=='string'||p[k].length>2000) || !p.id.trim() || !p.client.trim() || !/^\d{4}-(0[1-9]|1[0-2])$/.test(p.month) || ![p.videos,p.arts].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=10000) || typeof p.traffic!=='boolean' || ids.has(p.id) || keys.has(p.client+'|'+p.month)) throw new Error('Pacote mensal inválido ou duplicado.');
+   ids.add(p.id);keys.add(p.client+'|'+p.month);
+  }
+ }
  const date = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0,10) === value;
  for (const [table, fields] of [['tasks',['id','title','client','owner','type','status','due','priority','created']], ['events',['id','title','client','date','time','type']]]) {
   const ids = new Set();
@@ -56,6 +68,11 @@ function write(data, receiptCallback) {
  db.exec('BEGIN IMMEDIATE');
  try {
   if (read().revision !== data.revision) { const error = new Error('Os dados foram alterados em outra aba. Recarregue a página antes de continuar.'); error.status = 409; throw error; }
+  if(data.clientPlans !== undefined){
+   db.exec('DELETE FROM client_plans');
+   const plan=db.prepare('INSERT INTO client_plans VALUES (?,?,?,?,?,?,?)');
+   for(const p of data.clientPlans)plan.run(p.id,p.client,p.month,p.videos,p.arts,Number(p.traffic),p.services);
+  }
   db.exec('DELETE FROM tasks; DELETE FROM events;');
   const task = db.prepare('INSERT INTO tasks VALUES (?,?,?,?,?,?,?,?,?,?,?)');
   data.tasks.forEach((t,i) => task.run(t.id,t.title,t.client,t.owner,t.type,t.status,t.due,t.priority,t.created,t.completed,i));
